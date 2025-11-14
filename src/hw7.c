@@ -24,12 +24,32 @@ bst_sf* insert_bst_sf(matrix_sf *mat, bst_sf *root) {
 
 matrix_sf* find_bst_sf(char name, bst_sf *root) {
     if (root == NULL){
-        
+        return NULL;
     }
-    return NULL;
+
+    if(root->mat->name == name) return root;
+    if(root->mat->name < name)
+        root->left_child = insert_bst_sf(name, root->left_child);
+
+    else {
+        root->right_child = insert_bst_sf(name, root->right_child);
+    }
+    
+
+    
+    return root;
+
 }
 
 void free_bst_sf(bst_sf *root) {
+    //base case 
+    if(root == NULL) return;
+
+    free_bst_sf(root->left_child);
+    free_bst_sf(root->right_child);
+
+    free(root->mat);
+    free(root);
 }
 
 matrix_sf* add_mats_sf(const matrix_sf *mat1, const matrix_sf *mat2) {
@@ -60,7 +80,7 @@ matrix_sf* mult_mats_sf(const matrix_sf *mat1, const matrix_sf *mat2) {
 	for (int i = 0; i < rowLen; i++) {
 		for(int j = 0; j < colLen; j++){
 			for(int k = 0; k < mat1->num_cols; k++ )
-			res->values[i * colLen + j] += fetchVal(mat1, i, k) * fetcVal(mat2, k , j)
+			res->values[i * colLen + j] += fetchVal(mat1, i, k) * fetcVal(mat2, k , j);
 		}
 	}
 	return res;
@@ -164,6 +184,21 @@ matrix_sf* create_matrix_sf(char name, const char *expr) {
 }
 
 char* infix2postfix_sf(char *infix) {
+    int len = strlen(infix);
+    char stack[50];
+    int top = -1;
+    char *postfix = malloc(len+1);
+    int p = 0;
+
+    for(int i = 0 ; i < len ; i++) {
+        char ch = infix[i];
+        if (isspace(ch)) continue;;
+
+        if (ch >= 'A' && ch <= 'Z') {
+            postfix[p++] = ch;
+        }
+        
+    }
     return NULL;
 }
 
