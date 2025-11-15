@@ -59,14 +59,13 @@ matrix_sf* find_bst_sf(char name, bst_sf *root) {
     }
 
     if(root->mat->name == name) return root->mat;
-    if(root->mat->name < name)
-        root->left_child = find_bst_sf(name, root->left_child);
-
-    else {
-        root->right_child = find_bst_sf(name, root->right_child);
-    }
-
+    if(name < root->mat->name)
+        return find_bst_sf(name, root->left_child);  
+    else 
+        return find_bst_sf(name, root->right_child); 
 }
+
+
 
 void free_bst_sf(bst_sf *root) {
     //base case 
@@ -130,7 +129,7 @@ matrix_sf* transpose_mat_sf(const matrix_sf *mat) {
      */
     for (int i = 0 ;i < rowLen; i++){
         for( int j = 0 ; j < colLen; j++){
-               res->values[j * row + i] = mat->values[i * mat->num_cols + j];
+               res->values[j * rowLen + i] = mat->values[i * mat->num_cols + j];
         }
     }
 
@@ -186,7 +185,7 @@ matrix_sf* create_matrix_sf(char name, const char *expr) {
         }
         else if (state == 1) {
             
-            if(digit(curr)) {
+            if(isdigit(curr)) {
                 currNum = currNum * 10 + (curr -'0');
                 read = 1;
             }else{
@@ -230,8 +229,13 @@ char* infix2postfix_sf(char *infix) {
             continue;
         }
 
+        if(ch >= 'A' && ch <= 'Z') {                // FIXED: check matrix names
+            postfix[index++] = ch;
+            continue;
+        }
+
         if (ch == '\'') {
-            while(top >= 0 && prec(stack[top]) >= prec[ch]){
+            while(top >= 0 && prec(stack[top]) >= prec(ch)){
                 postfix[index++] = pop(stack, &top);
                 continue;
             }
@@ -285,7 +289,7 @@ matrix_sf* evaluate_expr_sf(char name, char *expr, bst_sf *root) {
         if(ch >= 'A' && ch <= 'Z') {
             matrix_sf *mat = find_bst_sf(ch , root);
 
-            stack[++top] = mat;
+            mats[++top] = mat;
         }
         else if (ch == '\'') {
             matrix_sf *mat = mats[top--];
@@ -406,14 +410,3 @@ void print_matrix_sf(matrix_sf *mat) {
 
 
 
-int main(int argc, char *argv[]){
-
-    if (argc < 2 ){
-        printf("Using: %s <file>\n", argv[0]);
-        return 1;
-    }
-    char *filename = argv[1];
-
-    matrix_sf *lastMat = execute_script_sf(filename);
-    return 0;
-}
