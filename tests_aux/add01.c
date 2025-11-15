@@ -1,4 +1,4 @@
-#include "unit_tests.h"
+// #include "unit_tests.h"
 #include "hw7.h"
 int main() { 
     matrix_sf *A = copy_matrix(3, 4, (int[]){-4, 18, 6, 7, 10, -14, 29, 8, 21, -99, 0, 7});

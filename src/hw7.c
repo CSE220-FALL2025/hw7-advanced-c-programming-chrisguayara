@@ -231,108 +231,93 @@ char* infix2postfix_sf(char *infix) {
         }
 
         if (ch == '\'') {
-            push(stack, &top , ch);
-            continue;
-        }
-
-        if ( isOperator(ch)) {
-            int precVal = prec(ch);
-
-            while(top >= 0) {
-                char topVal = peek(stack, top);
-
-                if (prec(top) >= precVal ){
-                    postfix[index++] = pop(stack, &top); 
-                    continue;
-                }
-                else break;
+            while(top >= 0 && prec(stack[top]) >= prec[ch]){
+                postfix[index++] = pop(stack, &top);
+                continue;
             }
             push(stack , &top, ch);
             continue;
+        }
+
+        if (ch == '(') {
+            push(stack, &top, ch);
+            continue;
+
+        }
+
+        if( ch == ')') {
+            while(top >= 0 && stack[top] != '(') {
+                postfix[index++] = pop(stack, &top);
+            }
+            if(top >= 0 ) pop(stack, &top);
+            continue;
+        }
+
+        if (isOperator(ch)) {
+            while(top >= 0 && prec(stack[top] >= prec(ch))) {
+                postfix[index++] = pop(stack, &top);
+            }
+            push(stack, &top, ch);
             
         }
 
     }
 
     while ( top >= 0) {
-        char topVal = pop(stack, &top);
-        if ( topVal != '(') postfix[index++] = topVal;
+        postfix[index++] = pop(stack, &top);
     }
-    postfix[index ++] = '\0';
-
-
+    postfix[index] = '\0';
     return postfix;
 }
 
 matrix_sf* evaluate_expr_sf(char name, char *expr, bst_sf *root) {
+    char *post = infix2postfix_sf(expr);
     matrix_sf* mats[100];
-    char ops[100];
-    int top = 0;
-    int opsTop = 0;
+    matrix_sf *res;
     
-    for (int i= 0; expr[i] != '\0'; i++){
-        char currCh = expr[i];
+    int top = -1;
+    
+    
+    for(int i = 0; post[i] != '\0' ; i++) {
+        char ch = post[i];
+        if(isspace(ch)) continue;
 
-        if(isspace((unsigned int)currCh)) {
-            continue;
+        if(ch >= 'A' && ch <= 'Z') {
+            matrix_sf *mat = find_bst_sf(ch , root);
+
+            stack[++top] = mat;
         }
+        else if (ch == '\'') {
+            matrix_sf *mat = mats[top--];
+            matrix_sf *trans = transpose_mat_sf(mat);
 
-        if (currCh >= 'A' && currCh <= 'Z') {
-            matrix_sf *currMat= find_bst_sf(currCh, root);
-            mats[++top] = currMat;
+            if(mat->name < 'A' || mat->name > 'Z' ) free(mat);
+            mats[++top] = trans;
 
         }
-        else if (currCh == '(') ops[++opsTop] = currCh;
+        else if(isOperator(ch)) {
+            matrix_sf *L = mats[top--];
+            matrix_sf *R = mats[top--];
+            
 
-        else if( currCh == ')') {
-            while (opsTop >= 0 && ops[opsTop] != '('){
+            if(ch == '+') res = add_mats_sf(L,R);
+            else res = mult_mats_sf(L, R);
 
-                char currOp = ops[opsTop];
-                opsTop--;
-                matrix_sf *R = mats[top--];
-                matrix_sf *L = mats[top--];
-
-                matrix_sf *res = addOrMul(L, R , currOp);
-                mats[++top ] = res;
-
-            }
-            opsTop --;
+            if(L->name > 'A' || L->name < 'Z' ) free(L);
+            if(R->name > 'A' || R->name < 'Z') free(R);
+            mats[++top] = res;
         }
-        else if(currCh == '\''){
-            matrix_sf *mat = mats[top];
-            mats[top] = transpose_mat_sf(mat);
-        }
-        else if(isOperator(currCh)) {
-            while (opsTop >= 0 && ops[opsTop] != '(' && prec(ops[opsTop]) >= prec(currCh));{
-                char currOp = ops[opsTop--];
-                matrix_sf *R = mats[top--];
-                matrix_sf *L = mats[top--];
-
-                matrix_sf * res = addOrMul(L, R, currOp);
-                mats[top] = res;
-
-            }
-            ops[++opsTop] = currCh;
-        }
-    }  
-
-    while (opsTop >= 0) {
-        char currOP = ops[opsTop--];
-        matrix_sf *R = mats[top--];
-        matrix_sf *L = mats[top--];
-
-        matrix_sf *res = addOrMul(L, R, ops);
-        mats[++top] = res;
     }
-        
+    matrix_sf *result = mats[top];
+    res->name = name;
+    free(post);
     
-    
-    return mats[top];
+    return res;
 }
 
 matrix_sf *execute_script_sf(char *filename) {
 
-    FILE *file = fopen(filename, 'r');
+    FILE *file = fopen(filename, "r");
     if (!file) return NULL;
 
     bst_sf *root = NULL;
@@ -345,11 +330,13 @@ matrix_sf *execute_script_sf(char *filename) {
 
         int skip = 1;
 
-        
-        if(!isspace((unsigned int) line[i])) {
-            skip = 0;
-            break;
+        for(int i = 0; line[i] != '\0'; i++) {
+            if(!isspace((unsigned int) line[i])) {
+                skip = 0;
+                break;
+            }
         }
+        
             if (skip) continue;
 
             int j = 0;
@@ -361,21 +348,27 @@ matrix_sf *execute_script_sf(char *filename) {
             if(line[j] >= 'A' && line[j] <= 'Z'){
                 char name = line[j++];
 
-            while(isspace((unsigned int) line[j])) j++;
+                while(isspace((unsigned int) line[j])) j++;
 
-            if(line[j] == '=') j++;
+                if(line[j] == '=') j++;
 
-            while (isspace((unsigned int)line[j])) j++;
+                while (isspace((unsigned int)line[j])) j++;
 
-            char *expr = line + j;
+                char *expr = line + j;
+                if(strchr(expr, '[') != NULL){
+                    lastMat = create_matrix_sf(name, expr);
 
-            lastMat = evaluate_expr_sf(name, expr, root);
+                }
+                else {
+                    lastMat = evaluate_expr_sf(name, expr, root);
+                }
 
-            root = insert_bst_sf(lastMat, root);
+                root = insert_bst_sf(lastMat, root);
             }
         }
         free(line);
         fclose(file);
+        free_bst_sf(root);
 
         return lastMat;
 
